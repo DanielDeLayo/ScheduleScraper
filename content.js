@@ -1,7 +1,22 @@
-http://jsfiddle.net/mvea1mmw/18/();
-function dateify(sDate) {
+function pad(num, len){
+	num = "" + num;
+  while (num.length < len)
+  {
+ 		num = "0" + num;
+  }
+	return num;
+}
+
+function dateify(sDate, dayOffset) {
   var dates = sDate.split("/");
-  return dates[2] + dates[0] + dates[1];
+  var year = dates[2];
+  var month = dates[0];
+  var day = dates[1];
+  var dateObj = new Date(year, month, parseInt(day,10) + dayOffset)
+  console.log(parseInt(day,10) + dayOffset);
+  console.log(dateObj.getMonth());
+  console.log(dateObj.getDate());
+  return "" + pad(dateObj.getFullYear(), 4) + pad(dateObj.getMonth(), 2) + pad(dateObj.getDate(), 2);
 }
 
 function untilDate(sDate) {
@@ -37,7 +52,7 @@ function locationFormat(sLoc) {
 }
 
 
-//var rows = document.getElementsByTagName("table")[0].rows; 
+//var rows = document.getElementsByTagName("table")[0].rows;
 //above for JS Fiddle
 //below for Solar
 var rows = frames[0].document.getElementById("ACE_STDNT_ENRL_SSV2$0").rows;
@@ -55,10 +70,43 @@ for (var i = 1; i < rows.length; i += 2) {
       className += " REC";
     if (infoTable[2].getElementsByTagName("span")[0].innerHTML.trim().includes("Lab"))
       className += " Lab";
-    var dateInfo = infoTable[6].getElementsByTagName("span")[0].innerHTML.trim();
-    var date = dateify(dateInfo.split(" - ")[0].trim());
-    //alert("date: " + date);
+
+    var earliestDayOffset = 7; //used to determine start date relative to the first day of class (assumed monday)
+ 		
     var desc = infoTable[3].getElementsByTagName("span")[0].innerHTML.trim().split(" - ");
+    var days = desc[0].substring(0, desc[0].length - 7).trim();
+    var dayString = "";
+    for (var j = 0; j < days.length - 1; j += 2) {
+      var day = days.substring(j, j + 2);
+      if (day.includes("Th")) {
+        dayString += "TH";
+        earliestDayOffset = earliestDayOffset < 3 ? earliestDayOffset : 3;
+      } else if (day.includes("Tu")) {
+        dayString += "TU";
+        earliestDayOffset = earliestDayOffset < 1 ? earliestDayOffset : 1;
+      } else if (day.includes("We")) {
+        dayString += "WE";
+        earliestDayOffset = earliestDayOffset < 2 ? earliestDayOffset : 2;
+      } else if (day.includes("Mo")) {
+        dayString += "MO";
+        earliestDayOffset = earliestDayOffset < 0 ? earliestDayOffset : 0;
+      } else if (day.includes("Fr")) {
+        dayString += "FR";
+        earliestDayOffset = earliestDayOffset < 4 ? earliestDayOffset : 4;
+      } else if (day.includes("Sa")) {
+        dayString += "SA";
+        earliestDayOffset = earliestDayOffset < 5 ? earliestDayOffset : 5;
+      } else if (day.includes("Su")) {
+        dayString += "SU";
+        earliestDayOffset = earliestDayOffset < 6 ? earliestDayOffset : 6;
+      } else
+        alert("Unrecognized Date:" + day);
+      if (j < days.length - 2) dayString += ",";
+    }
+
+    var dateInfo = infoTable[6].getElementsByTagName("span")[0].innerHTML.trim();
+    var date = dateify(dateInfo.split(" - ")[0].trim(), earliestDayOffset);
+    //alert("date: " + date);
     var time = desc[0].replace(":", "");
     time = time.substring(time.length - 6).trim();
     time = timeify(time);
@@ -67,40 +115,14 @@ for (var i = 1; i < rows.length; i += 2) {
     endTime = timeify(endTime);
     var endTimeString = date + "T" + endTime;
     var uString = untilDate(dateInfo.split(" - ")[1].trim()) + "T010000";
-    var days = desc[0].substring(0, desc[0].length - 7).trim();
-    var dayString = "";
-    var onMonday = false;
-    for (var j = 0; j < days.length - 1; j += 2) {
-      var day = days.substring(j, j + 2);
-      if (day.includes("Th"))
-        dayString += "TH";
-      else if (day.includes("Tu"))
-        dayString += "TU";
-      else if (day.includes("We"))
-        dayString += "WE";
-      else if (day.includes("Mo")) {
-        dayString += "MO";
-        onMonday = true;
-      }
-      else if (day.includes("Fr"))
-        dayString += "FR";
-      else if (day.includes("Sa"))
-        dayString += "SA";
-      else if (day.includes("Su"))
-        dayString += "SU";
-      else
-        alert("Unrecognized Date:" + day);
-      if (j < days.length - 2) dayString += ",";
-    }
+
+
     var locString = infoTable[4].getElementsByTagName("span")[0].innerHTML.trim();
     locString = locationFormat(locString);
     var stamp = new Date().toJSON().slice(0, 10).replace(/-/g, '');
     var profName = infoTable[5].getElementsByTagName("span")[0].innerHTML.trim()
     eventString += "BEGIN:VEVENT\nCLASS:PUBLIC\nDTSTART;TZID=America/New_York:" + dString + "\nRRULE:FREQ=WEEKLY;UNTIL=" + uString + ";BYDAY=" + dayString + "\nDTEND;TZID=America/New_York:" + endTimeString;
-    if (!onMonday)
-    {
-    	eventString += "\nEXDATE;TZID=America/New_York:" + dString;
-    }
+
     eventString += "\nDTSTAMP:" + stamp + "\nLOCATION:" + locString + "\nDESCRIPTION;LANGUAGE=en-us:" + profName + "\nTRANSP:TRANSPARENT\nSUMMARY:" + className.trim() + "\nEND:VEVENT\n";
   }
 }
