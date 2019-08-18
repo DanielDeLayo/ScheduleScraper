@@ -1,6 +1,6 @@
 # ScheduleScraper
 Small Solar List View Schedule to .ics scrapper
-http://jsfiddle.net/mvea1mmw/18/
+http://jsfiddle.net/csgqk20w/4/
 
 (Does not work with military time or other date formats e.g. Romanian locale)
 
