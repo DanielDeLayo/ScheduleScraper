@@ -39,7 +39,7 @@ function timeify(sTime) {
 }
 
 function locationFormat(sLoc) {
-  var temp = sLoc.replace("LBR", "Library").replace("WESTCAMPUS", "").replace("COMPUTER SCI", "Old Computer Science").replace("HLL", "Hall").split(" ");
+  var temp = sLoc.replace("LBR", "Library").replace("WESTCAMPUS", "").replace("COMPUTER SCI", "Old Computer Science").replace("HLL", "Hall").replace("ONLINE ONLINE", "ONLINE").split(" ");
   var s = "";
   for (var i = 0; i < temp.length; i++) {
     s += temp[i].charAt(0).toUpperCase();
@@ -52,7 +52,7 @@ function locationFormat(sLoc) {
 }
 
 
-//var rows = document.getElementsByTagName("table")[0].rows;
+//var rows = document.getElementById("ACE_STDNT_ENRL_SSV2$0").rows;
 //above for JS Fiddle
 //below for Solar
 var rows = frames[0].document.getElementById("ACE_STDNT_ENRL_SSV2$0").rows;
@@ -61,20 +61,26 @@ var eventString = "BEGIN:VCALENDAR\nPRODID:-//Google Inc//Google Calendar 70.905
 for (var i = 1; i < rows.length; i += 2) {
   var table = rows[i].getElementsByTagName("table")[0];
   var tablePre = table.rows[1].getElementsByTagName("table")[0].rows[2].getElementsByTagName("table")[0];
-  for (var k = 1; k < tablePre.rows.length; k++) {
+  //alert(tablePre.rows.length)
+  for (var k = 0; k < tablePre.rows.length; k++) {
     var infoTable = tablePre.rows[k].getElementsByTagName("td");
     var nameInfo = table.rows[0].getElementsByTagName("table")[0].getElementsByTagName("table")[0].rows[0].innerHTML.trim();
     var className = nameInfo.substring(nameInfo.indexOf(">") + 1).split(" - ")[0];
-
-    if (infoTable[2].getElementsByTagName("span")[0].innerHTML.trim().includes("Recitation"))
+		  //alert(className)
+    if (infoTable[3].getElementsByTagName("span")[0].innerHTML.trim().includes("Recitation"))
       className += " REC";
-    if (infoTable[2].getElementsByTagName("span")[0].innerHTML.trim().includes("Lab"))
+    if (infoTable[3].getElementsByTagName("span")[0].innerHTML.trim().includes("Lab"))
       className += " Lab";
 
     var earliestDayOffset = 7; //used to determine start date relative to the first day of class (assumed monday)
- 		
-    var desc = infoTable[3].getElementsByTagName("span")[0].innerHTML.trim().split(" - ");
+    
+		var desc = infoTable[4].getElementsByTagName("span")[0].innerText.trim().split(" - ");
+    
+    if (desc.length < 2)
+    	continue
+    
     var days = desc[0].substring(0, desc[0].length - 7).trim();
+    
     var dayString = "";
     for (var j = 0; j < days.length - 1; j += 2) {
       var day = days.substring(j, j + 2);
@@ -104,7 +110,7 @@ for (var i = 1; i < rows.length; i += 2) {
       if (j < days.length - 2) dayString += ",";
     }
 
-    var dateInfo = infoTable[6].getElementsByTagName("span")[0].innerHTML.trim();
+    var dateInfo = infoTable[7].getElementsByTagName("span")[0].innerHTML.trim();
     var date = dateify(dateInfo.split(" - ")[0].trim(), earliestDayOffset);
     //alert("date: " + date);
     var time = desc[0].replace(":", "");
@@ -117,10 +123,10 @@ for (var i = 1; i < rows.length; i += 2) {
     var uString = untilDate(dateInfo.split(" - ")[1].trim()) + "T010000";
 
 
-    var locString = infoTable[4].getElementsByTagName("span")[0].innerHTML.trim();
+    var locString = infoTable[5].getElementsByTagName("span")[0].innerText;
     locString = locationFormat(locString);
     var stamp = new Date().toJSON().slice(0, 10).replace(/-/g, '');
-    var profName = infoTable[5].getElementsByTagName("span")[0].innerHTML.trim()
+    var profName = infoTable[6].getElementsByTagName("span")[0].innerHTML.trim()
     eventString += "BEGIN:VEVENT\nCLASS:PUBLIC\nDTSTART;TZID=America/New_York:" + dString + "\nRRULE:FREQ=WEEKLY;UNTIL=" + uString + ";BYDAY=" + dayString + "\nDTEND;TZID=America/New_York:" + endTimeString;
 
     eventString += "\nDTSTAMP:" + stamp + "\nLOCATION:" + locString + "\nDESCRIPTION;LANGUAGE=en-us:" + profName + "\nTRANSP:TRANSPARENT\nSUMMARY:" + className.trim() + "\nEND:VEVENT\n";
